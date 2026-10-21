@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Лабораторна робота №5 - DOM та події</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 760px; margin: 30px auto; padding: 0 15px; }
+    h2 { margin-top: 35px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    input[type="text"] { padding: 4px; }
+    button { padding: 5px 12px; cursor: pointer; }
+    .row { margin: 6px 0; }
+    .label { display: inline-block; width: 230px; }
+    .options label { display: block; margin: 3px 0; cursor: pointer; }
+    .good { color: green; }
+    .bad { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Лабораторна робота №5</h1>
+
+  <h2>Завдання 1. Температура</h2>
+  <div class="row">
+    <span class="label">Температура за Фаренгейтом</span>
+    <input type="text" id="fahrenheit" oninput="fahrenheitChanged()">
+  </div>
+  <div class="row">
+    <span class="label">Температура за Цельсієм</span>
+    <input type="text" id="celsius" oninput="celsiusChanged()">
+  </div>
+
+  <h2>Завдання 2. Таблиця множення</h2>
+  <div id="score2"></div>
+  <div class="row"><button onclick="newQuestion2()">наступне завдання</button></div>
+  <div class="row">
+    <span id="question2"></span>
+    <input type="text" id="answer2" size="10" onkeydown="if (event.key === 'Enter') checkAnswer2()">
+    <button onclick="checkAnswer2()">перевірити</button>
+  </div>
+  <div id="result2"></div>
+
+  <h2>Завдання 3. Таблиця множення (радіокнопки)</h2>
+  <div id="score3"></div>
+  <div class="row"><button onclick="newQuestion3()">наступне завдання</button></div>
+  <div id="question3"></div>
+  <div id="options3" class="options"></div>
+  <div id="result3"></div>
+
+  <h2>Завдання 4. Перелистування зображень</h2>
+  <div id="rotator"></div>
+
+  <h2>Завдання 5. Captcha</h2>
+  <div id="captcha"></div>
+
+  <script>
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function round2(value) {
+      return Math.round(value * 100) / 100;
+    }
+
+    function fahrenheitChanged() {
+      const f = parseFloat(document.getElementById('fahrenheit').value.replace(',', '.'));
+      const celsius = document.getElementById('celsius');
+      if (isNaN(f)) {
+        celsius.value = '';
+        return;
+      }
+      celsius.value = round2(5 / 9 * (f - 32));
+    }
+
+    function celsiusChanged() {
+      const c = parseFloat(document.getElementById('celsius').value.replace(',', '.'));
+      const fahrenheit = document.getElementById('fahrenheit');
+      if (isNaN(c)) {
+        fahrenheit.value = '';
+        return;
+      }
+      fahrenheit.value = round2(c * 9 / 5 + 32);
+    }
+
+    const quiz2 = { correct: 0, total: 0, answer: 0, answered: false };
+
+    function updateScore2() {
+      const percent = quiz2.total ? Math.round(quiz2.correct / quiz2.total * 100) : 0;
+      document.getElementById('score2').textContent =
+        `Загальний рахунок ${percent}% (${quiz2.correct} правильних відповідей з ${quiz2.total})`;
+    }
+
+    function newQuestion2() {
+      const a = randInt(2, 9);
+      const b = randInt(2, 9);
+      quiz2.answer = a * b;
+      quiz2.answered = false;
+      document.getElementById('question2').textContent = `${a} × ${b} =`;
+      const input = document.getElementById('answer2');
+      input.value = '';
+      input.focus();
+      document.getElementById('result2').textContent = '';
+    }
+
+    function checkAnswer2() {
+      if (quiz2.answered) return;
+      const value = document.getElementById('answer2').value.trim();
+      const result = document.getElementById('result2');
+      if (value === '') {
+        result.className = 'bad';
+        result.textContent = 'Введіть відповідь';
+        return;
+      }
+      quiz2.answered = true;
+      quiz2.total++;
+      if (Number(value) === quiz2.answer) {
+        quiz2.correct++;
+        result.className = 'good';
+        result.textContent = 'Правильно!';
+      } else {
+        result.className = 'bad';
+        result.textContent = `Помилка, правильна відповідь «${quiz2.answer}»`;
+      }
+      updateScore2();
+    }
+
+    const quiz3 = { correct: 0, total: 0, answer: 0, answered: false };
+
+    function updateScore3() {
+      const percent = quiz3.total ? Math.round(quiz3.correct / quiz3.total * 100) : 0;
+      document.getElementById('score3').textContent =
+        `Загальний рахунок ${percent}% (${quiz3.correct} правильних відповідей з ${quiz3.total})`;
+    }
+
+    function newQuestion3() {
+      const a = randInt(2, 9);
+      const b = randInt(2, 9);
+      quiz3.answer = a * b;
+      quiz3.answered = false;
+      document.getElementById('question3').textContent = `${a} × ${b} =`;
+      document.getElementById('result3').textContent = '';
+
+      const variants = [quiz3.answer];
+      while (variants.length < 4) {
+        const wrong = randInt(2, 9) * randInt(2, 9);
+        if (!variants.includes(wrong)) {
+          variants.push(wrong);
+        }
+      }
+      variants.sort(() => Math.random() - 0.5);
+
+      const options = document.getElementById('options3');
+      options.textContent = '';
+      variants.forEach(variant => {
+        const label = document.createElement('label');
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'variant3';
+        radio.value = variant;
+        radio.onchange = () => checkAnswer3(variant);
+        label.appendChild(radio);
+        label.appendChild(document.createTextNode(' ' + variant));
+        options.appendChild(label);
+      });
+    }
+
+    function checkAnswer3(value) {
+      if (quiz3.answered) return;
+      quiz3.answered = true;
+      quiz3.total++;
+      document.querySelectorAll('input[name="variant3"]').forEach(radio => {
+        radio.disabled = true;
+      });
+      const result = document.getElementById('result3');
+      if (value === quiz3.answer) {
+        quiz3.correct++;
+        result.className = 'good';
+        result.textContent = 'Правильно!';
+      } else {
+        result.className = 'bad';
+        result.textContent = `Помилка, правильна відповідь «${quiz3.answer}»`;
+      }
+      updateScore3();
+    }
+
+    let imagesArray = [
+      {
+        path: 'images/001.jpg',
+        title: 'Сорочка',
+        description: 'Класична біла сорочка'
+      },
+      {
+        path: 'images/002.jpg',
+        title: 'Піджак',
+        description: 'Діловий піджак темно-сірого кольору'
+      },
+      {
+        path: 'images/003.jpg',
+        title: 'Джинси',
+        description: 'Прямі сині джинси'
+      },
+      {
+        path: 'images/004.jpg',
+        title: 'Светр',
+        description: 'Теплий в\'язаний светр'
+      }
+    ];
+
+    function createElementWithStyle(tag, styles) {
+      const element = document.createElement(tag);
+      Object.assign(element.style, styles);
+      return element;
+    }
+
+    function initPhotoRotator(containerId, images) {
+      const container = document.getElementById(containerId);
+      let current = 0;
+
+      const wrapper = createElementWithStyle('div', {
+        display: 'grid',
+        gridTemplateColumns: '80px 1fr 80px',
+        border: '1px solid #ddd',
+        maxWidth: '700px'
+      });
+
+      const back = createElementWithStyle('a', {
+        alignSelf: 'center',
+        textAlign: 'center',
+        cursor: 'pointer',
+        color: '#4a4aa5'
+      });
+      back.href = '#';
+      back.textContent = 'Назад';
+
+      const forward = createElementWithStyle('a', {
+        alignSelf: 'center',
+        textAlign: 'center',
+        cursor: 'pointer',
+        color: '#4a4aa5'
+      });
+      forward.href = '#';
+      forward.textContent = 'Вперед';
+
+      const center = createElementWithStyle('div', { borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' });
+      const counter = createElementWithStyle('div', { textAlign: 'center', padding: '8px', fontSize: '14px' });
+      const imageBox = createElementWithStyle('div', {
+        height: '400px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      });
+      const image = createElementWithStyle('img', { maxWidth: '100%', maxHeight: '100%' });
+      const caption = createElementWithStyle('div', { textAlign: 'center', padding: '8px', height: '45px' });
+      const title = createElementWithStyle('div', { fontWeight: 'bold' });
+      const description = createElementWithStyle('div', { fontSize: '14px' });
+
+      imageBox.appendChild(image);
+      caption.appendChild(title);
+      caption.appendChild(description);
+      center.appendChild(counter);
+      center.appendChild(imageBox);
+      center.appendChild(caption);
+      wrapper.appendChild(back);
+      wrapper.appendChild(center);
+      wrapper.appendChild(forward);
+      container.appendChild(wrapper);
+
+      function show() {
+        const item = images[current];
+        image.src = item.path;
+        image.alt = item.title;
+        counter.textContent = `Фотографія ${current + 1} з ${images.length}`;
+        title.textContent = item.title;
+        description.textContent = item.description;
+        back.style.visibility = current === 0 ? 'hidden' : 'visible';
+        forward.style.visibility = current === images.length - 1 ? 'hidden' : 'visible';
+      }
+
+      back.onclick = function (event) {
+        event.preventDefault();
+        if (current > 0) {
+          current--;
+          show();
+        }
+      };
+
+      forward.onclick = function (event) {
+        event.preventDefault();
+        if (current < images.length - 1) {
+          current++;
+          show();
+        }
+      };
+
+      show();
+    }
+
+    const digitFont = {
+      '0': ['111', '101', '101', '101', '111'],
+      '1': ['010', '110', '010', '010', '111'],
+      '2': ['111', '001', '111', '100', '111'],
+      '3': ['111', '001', '111', '001', '111'],
+      '4': ['101', '101', '111', '001', '001'],
+      '5': ['111', '100', '111', '001', '111'],
+      '6': ['111', '100', '111', '101', '111'],
+      '7': ['111', '001', '001', '001', '001'],
+      '8': ['111', '101', '111', '101', '111'],
+      '9': ['111', '101', '111', '001', '111']
+    };
+
+    function initCaptcha(containerId, count) {
+      const container = document.getElementById(containerId);
+
+      let code = '';
+      for (let i = 0; i < count; i++) {
+        code += randInt(0, 9);
+      }
+
+      const title = createElementWithStyle('div', { fontSize: '20px', marginBottom: '10px' });
+      title.textContent = 'Введіть число';
+
+      const display = createElementWithStyle('div', {
+        display: 'inline-flex',
+        gap: '10px',
+        padding: '6px',
+        border: '2px solid #bbb'
+      });
+
+      for (const digit of code) {
+        const digitBox = createElementWithStyle('div', {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 8px)'
+        });
+        digitFont[digit].join('').split('').forEach(pixel => {
+          const span = createElementWithStyle('span', {
+            width: '8px',
+            height: '8px',
+            background: pixel === '1' ? 'red' : 'white'
+          });
+          digitBox.appendChild(span);
+        });
+        display.appendChild(digitBox);
+      }
+
+      const input = createElementWithStyle('input', { display: 'block', marginTop: '4px' });
+      input.type = 'text';
+      input.maxLength = count;
+
+      const message = createElementWithStyle('div', { marginTop: '6px', fontSize: '18px', minHeight: '24px' });
+
+      input.oninput = function () {
+        if (input.value.length < count) {
+          message.textContent = '';
+          return;
+        }
+        if (input.value === code) {
+          message.style.color = 'green';
+          message.textContent = 'Правильно';
+        } else {
+          message.style.color = 'red';
+          message.textContent = 'Помилка';
+        }
+      };
+
+      container.appendChild(title);
+      container.appendChild(display);
+      container.appendChild(input);
+      container.appendChild(message);
+    }
+
+    updateScore2();
+    newQuestion2();
+    updateScore3();
+    newQuestion3();
+    initPhotoRotator('rotator', imagesArray);
+    initCaptcha('captcha', 4);
+  </script>
+</body>
+</html>
